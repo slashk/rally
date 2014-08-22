@@ -219,6 +219,7 @@ class ManagerWithFind(BaseManager):
         """
         matches = self.findall(**kwargs)
         num_matches = len(matches)
+        LOG.debug("%d match found" % num_matches)
         if num_matches == 0:
             msg = _("No %(name)s matching %(args)s.") % {
                 'name': self.resource_class.__name__,
@@ -228,6 +229,7 @@ class ManagerWithFind(BaseManager):
         elif num_matches > 1:
             raise exceptions.NoUniqueMatch()
         else:
+	    LOG.debug("match is %s" % matches[0])
             return matches[0]
 
     def findall(self, **kwargs):

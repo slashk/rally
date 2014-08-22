@@ -142,7 +142,7 @@ class KeystoneV2Wrapper(KeystoneWrapper):
         return KeystoneV2Wrapper._wrap_v2_user(user)
 
     def get_user(self, user_name):
-        self.client.users.find(name=user_name)
+        self.client.users.find(username=user_name)
 
     def delete_user(self, user_id):
         self.client.users.delete(user_id)
@@ -221,7 +221,7 @@ class KeystoneV3Wrapper(KeystoneWrapper):
         return map(KeystoneV3Wrapper._wrap_v3_user, self.client.users.list())
 
     def get_user(self, user_name):
-        self.client.users.find(name=user_name)
+        self.client.users.find(username=user_name)
 
     def list_projects(self):
         return map(KeystoneV3Wrapper._wrap_v3_project,

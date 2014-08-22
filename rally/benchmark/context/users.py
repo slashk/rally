@@ -126,26 +126,30 @@ class UserGenerator(base.Context):
         LOG.debug("Static user model is %s" % static_users)
         if static_users:
             tenant = client.get_project(static_tenant_name)
+	    LOG.debug("Static project ID is %s" % tenant.id)
         else:
             tenant = client.create_project(
                 cls.PATTERN_TENANT % {"task_id": task_id, "iter": i},
                                       project_dom)
         LOG.debug("Creating %d users for tenant %s" % (users_num, tenant.id))
-        LOG.debug("Admin endpoint is " % admin_endpoint)
 
         if static_users:
             for user_name in test_user_names:
-                u = client.get_user(user_name)
-                user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
-                                                  password, tenant.name,
-                                                  consts.EndpointPermission.USER,
-                                                  client.region_name,
-                                                  project_domain_name=project_dom,
-                                                  user_domain_name=user_dom)
-                users.append({"id": u.id,
-                              "endpoint": user_endpoint,
-                              "tenant_id": u.tenantId})
-    	        LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
+    	        LOG.debug("static user: %s" % (user_name))
+		#import pdb; pdb.set_trace()
+                u = client.client.users.find(username=user_name)
+    	        LOG.debug("static user: %s" % (u))
+		if u is not None:
+			user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
+							  password, tenant.name,
+							  consts.EndpointPermission.USER,
+							  client.region_name,
+							  project_domain_name=project_dom,
+							  user_domain_name=user_dom)
+			users.append({"id": u.id,
+				      "endpoint": user_endpoint,
+				      "tenant_id": u.tenantId})
+			LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
         else:
             for user_id in range(users_num):
 		    username = cls.PATTERN_USER % {"tenant_id": tenant.id,
@@ -163,7 +167,7 @@ class UserGenerator(base.Context):
 				  "endpoint": user_endpoint,
 				  "tenant_id": tenant.id})
 
-        LOG.debug("tenant: %s, users %s" % (tenant.id, users))
+        LOG.debug("tenant id: %s, tenant name: %s,  users %s" % (tenant.id, tenant.name, users))
 
         return ({"id": tenant.id, "name": tenant.name}, users)
 
@@ -209,7 +213,7 @@ class UserGenerator(base.Context):
 		users_num = self.config["users_per_tenant"]
 	else:
 		# TODO: this should count supplied users
-		users_num = 3
+		users_num = 1
 
         args = [(self.config["static_users"], self.endpoint, users_num, self.config["project_domain"],
                  self.config["user_domain"], self.task["uuid"], i)
@@ -218,6 +222,9 @@ class UserGenerator(base.Context):
         LOG.debug("Creating %d users using %s threads" % (
             users_num * self.config["tenants"], self.config["concurrent"]))
 
+	self.context["tenants"] = []
+	self.context["users"] = []
+
         for tenant, users in utils.run_concurrent(
                 self.config["concurrent"],
                 UserGenerator,
@@ -225,6 +232,9 @@ class UserGenerator(base.Context):
                 args):
             self.context["tenants"].append(tenant)
             self.context["users"] += users
+
+        LOG.debug("Users: %s" % self.context["users"])
+        LOG.debug("Tenant: %s" % self.context["tenants"])
 
     @rutils.log_task_wrapper(LOG.info, _("Exit context: `users`"))
     def cleanup(self):

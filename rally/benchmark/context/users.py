@@ -132,6 +132,7 @@ class UserGenerator(base.Context):
             users.append({"id": u.id,
                           "endpoint": user_endpoint,
                           "tenant_id": u.tenantId})
+	    LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
         return users
 
     @classmethod
@@ -143,7 +144,8 @@ class UserGenerator(base.Context):
         :returns: tenant object
         """
 
-        return client.tenants.get_project(test_tenant)
+        LOG.debug("substituting static project: %s" % (test_tenant))
+        return kclient.tenants.get_project(test_tenant)
 
     @classmethod
     def _create_tenant_users(cls, args):
@@ -154,17 +156,17 @@ class UserGenerator(base.Context):
         :returns: tuple (dict tenant, list users)
         """
 
-        admin_endpoint, users_num, project_dom, user_dom, task_id, i = args
+        static_users, admin_endpoint, users_num, project_dom, user_dom, task_id, i = args
         users = []
 
         client = keystone.wrap(osclients.Clients(admin_endpoint).keystone())
+        LOG.debug("Static user model is %s" % static_users)
         if static_users:
+            tenant = self._static_tenant_list(client, "demo")
+        else:
             tenant = client.create_project(
                 cls.PATTERN_TENANT % {"task_id": task_id, "iter": i},
                                       project_dom)
-        else:
-            tenant = _static_tenant(client, "demo")
-
         LOG.debug("Creating %d users for tenant %s" % (users_num, tenant.id))
         LOG.debug("Admin endpoint is " % admin_endpoint)
 
@@ -172,7 +174,7 @@ class UserGenerator(base.Context):
             # TODO: refactor this ugliness out
             test_user_names = ["test01", "test02", "test03"]
             password = "s3kr1t"
-            users = _static_user_list(client, test_user_names, password,
+            users = self._static_user_list(client, test_user_names, password,
                                       admin_endpoint, tenant, project_dom,
                                       user_dom)
         else:
@@ -234,9 +236,13 @@ class UserGenerator(base.Context):
     def setup(self):
         """Create tenants and users, using pool of threads."""
 
-        users_num = self.config["users_per_tenant"]
+        if not self.config["static_users"]:
+		users_num = self.config["users_per_tenant"]
+	else:
+		# TODO: this should count supplied users
+		users_num = 3
 
-        args = [(self.endpoint, users_num, self.config["project_domain"],
+        args = [(self.config["static_users"], self.endpoint, users_num, self.config["project_domain"],
                  self.config["user_domain"], self.task["uuid"], i)
                 for i in range(self.config["tenants"])]
 
@@ -257,7 +263,7 @@ class UserGenerator(base.Context):
 
         concurrent = self.config["concurrent"]
 
-	if not static_users:
+	if not self.config["static_users"]:
 		# Delete users
 		users_chunks = utils.chunks(self.context["users"], concurrent)
 		utils.run_concurrent(

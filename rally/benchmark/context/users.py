@@ -107,41 +107,6 @@ class UserGenerator(base.Context):
         #                 and tenants
 
     @classmethod
-    def _static_user_list(cls, test_user_names, password, admin_endpoint,
-                          tenant, project_dom, user_dom):
-        """Return static users instead of making temporary users and tenants.
-
-        :returns: list (dict users)
-        """
-
-        users = []
-        for user_name in test_user_names:
-            u = client.users.get_user(user_name)
-            user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
-                                              password, tenant.name,
-                                              consts.EndpointPermission.USER,
-                                              client.region_name,
-                                              project_domain_name=project_dom,
-                                              user_domain_name=user_dom)
-            users.append({"id": u.id,
-                          "endpoint": user_endpoint,
-                          "tenant_id": u.tenantId})
-	    LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
-        return users
-
-    @classmethod
-    def _static_tenant_list(kclient, test_tenant):
-        """Return static tenant instead of making temporary users and tenants.
-
-        :param args: keystone client object
-        :param args: test_tenant tenant name for test users
-        :returns: tenant object
-        """
-
-        LOG.debug("substituting static project: %s" % (test_tenant))
-        return kclient.tenants.get_project(test_tenant)
-
-    @classmethod
     def _create_tenant_users(cls, args):
         """Create tenant with users and their endpoints.
 
@@ -152,11 +117,15 @@ class UserGenerator(base.Context):
 
         static_users, admin_endpoint, users_num, project_dom, user_dom, task_id, i = args
         users = []
+        # TODO: refactor this ugliness out
+        test_user_names = ["test01", "test02", "test03"]
+        password = "s3kr1t"
+        static_tenant_name = "demo"
 
         client = keystone.wrap(osclients.Clients(admin_endpoint).keystone())
         LOG.debug("Static user model is %s" % static_users)
         if static_users:
-            tenant = _static_tenant_list(client, "demo")
+            tenant = client.get_project(static_tenant_name)
         else:
             tenant = client.create_project(
                 cls.PATTERN_TENANT % {"task_id": task_id, "iter": i},
@@ -165,12 +134,18 @@ class UserGenerator(base.Context):
         LOG.debug("Admin endpoint is " % admin_endpoint)
 
         if static_users:
-            # TODO: refactor this ugliness out
-            test_user_names = ["test01", "test02", "test03"]
-            password = "s3kr1t"
-            users = _static_user_list(client, test_user_names, password,
-                                      admin_endpoint, tenant, project_dom,
-                                      user_dom)
+            for user_name in test_user_names:
+                u = client.get_user(user_name)
+                user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
+                                                  password, tenant.name,
+                                                  consts.EndpointPermission.USER,
+                                                  client.region_name,
+                                                  project_domain_name=project_dom,
+                                                  user_domain_name=user_dom)
+                users.append({"id": u.id,
+                              "endpoint": user_endpoint,
+                              "tenant_id": u.tenantId})
+    	        LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
         else:
             for user_id in range(users_num):
 		    username = cls.PATTERN_USER % {"tenant_id": tenant.id,

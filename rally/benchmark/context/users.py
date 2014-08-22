@@ -39,6 +39,7 @@ context_opts = [
     cfg.StrOpt("user_domain",
                default="default",
                help="ID of domain in which users will be created."),
+    cfg.BoolOpt('static_users', default=False, help='use static users'),
 ]
 
 CONF = cfg.CONF

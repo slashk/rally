@@ -257,18 +257,19 @@ class UserGenerator(base.Context):
 
         concurrent = self.config["concurrent"]
 
-        # Delete users
-        users_chunks = utils.chunks(self.context["users"], concurrent)
-        utils.run_concurrent(
-            concurrent,
-            UserGenerator,
-            "_delete_users",
-            [(self.endpoint, users) for users in users_chunks])
+	if not static_users:
+		# Delete users
+		users_chunks = utils.chunks(self.context["users"], concurrent)
+		utils.run_concurrent(
+		    concurrent,
+		    UserGenerator,
+		    "_delete_users",
+		    [(self.endpoint, users) for users in users_chunks])
 
-        # Delete tenants
-        tenants_chunks = utils.chunks(self.context["tenants"], concurrent)
-        utils.run_concurrent(
-            concurrent,
-            UserGenerator,
-            "_delete_tenants",
-            [(self.endpoint, tenants) for tenants in tenants_chunks])
+		# Delete tenants
+		tenants_chunks = utils.chunks(self.context["tenants"], concurrent)
+		utils.run_concurrent(
+		    concurrent,
+		    UserGenerator,
+		    "_delete_tenants",
+		    [(self.endpoint, tenants) for tenants in tenants_chunks])

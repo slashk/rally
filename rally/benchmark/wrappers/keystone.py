@@ -129,7 +129,7 @@ class KeystoneV2Wrapper(KeystoneWrapper):
 
     def get_project(self, project_name, domain_name='Default'):
         self._check_domain(domain_name)
-        tenant = self.client.tenants.find(project_name)
+        tenant = self.client.tenants.find(name=project_name)
         return KeystoneV2Wrapper._wrap_v2_tenant(tenant)
 
     def delete_project(self, project_id):

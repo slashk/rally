@@ -92,14 +92,57 @@ class UserGenerator(base.Context):
                                cfg.CONF.users_context.project_domain)
         self.config.setdefault("user_domain",
                                cfg.CONF.users_context.user_domain)
-        self.context["users"] = []
-        self.context["tenants"] = []
         self.endpoint = self.context["admin"]["endpoint"]
+        self.config.setdefault("static_users",
+                               cfg.CONF.users_context.static_users)
+        # self.config.setdefault("static_user_names",
+        #                        cfg.CONF.users_context.static_user_names)
+        # self.config.setdefault("static_tenant_names",
+        #                        cfg.CONF.users_context.static_tenant_names)
+        # if self.endpoint == []:
+        #     self.context["users"] = []
+        #     self.context["tenants"] = []
+        # else:
+        #     self.context["users"] = _static_user_list(self.endpoint)
+        #     self.context["tenants"] = _static_tenant_list(self.endpoint)
         # NOTE(boris-42): I think this is the best place for adding logic when
         #                 we are using pre created users or temporary. So we
         #                 should rename this class s/UserGenerator/UserContext/
         #                 and change a bit logic of populating lists of users
         #                 and tenants
+
+    @classmethod
+    def _static_user_list(cls, test_user_names, password, admin_endpoint,
+                          tenant, project_dom, user_dom):
+        """Return static users instead of making temporary users and tenants.
+
+        :returns: list (dict users)
+        """
+
+        users = []
+        for user_name in test_user_names:
+            u = client.users.get_user(user_name)
+            user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
+                                              password, tenant.name,
+                                              consts.EndpointPermission.USER,
+                                              client.region_name,
+                                              project_domain_name=project_dom,
+                                              user_domain_name=user_dom)
+            users.append({"id": u.id,
+                          "endpoint": user_endpoint,
+                          "tenant_id": u.tenantId})
+        return users
+
+    @classmethod
+    def _static_tenant_list(kclient, test_tenant):
+        """Return static tenant instead of making temporary users and tenants.
+
+        :param args: keystone client object
+        :param args: test_tenant tenant name for test users
+        :returns: tenant object
+        """
+
+        return client.tenants.get_project(test_tenant)
 
     @classmethod
     def _create_tenant_users(cls, args):
@@ -114,12 +157,25 @@ class UserGenerator(base.Context):
         users = []
 
         client = keystone.wrap(osclients.Clients(admin_endpoint).keystone())
-        tenant = client.create_project(
-            cls.PATTERN_TENANT % {"task_id": task_id, "iter": i}, project_dom)
+        if static_users:
+            tenant = client.create_project(
+                cls.PATTERN_TENANT % {"task_id": task_id, "iter": i},
+                                      project_dom)
+        else:
+            tenant = _static_tenant(client, "demo")
 
         LOG.debug("Creating %d users for tenant %s" % (users_num, tenant.id))
+        LOG.debug("Admin endpoint is " % admin_endpoint)
 
-        for user_id in range(users_num):
+        if static_users:
+            # TODO: refactor this ugliness out
+            test_user_names = ["test01", "test02", "test03"]
+            password = "s3kr1t"
+            users = _static_user_list(client, test_user_names, password,
+                                      admin_endpoint, tenant, project_dom,
+                                      user_dom)
+        else:
+            for user_id in range(users_num):
             username = cls.PATTERN_USER % {"tenant_id": tenant.id,
                                            "uid": user_id}
             user = client.create_user(username, "password",
@@ -134,6 +190,8 @@ class UserGenerator(base.Context):
             users.append({"id": user.id,
                           "endpoint": user_endpoint,
                           "tenant_id": tenant.id})
+
+        LOG.debug("tenant: %s, users %s" % (tenant.id, users))
 
         return ({"id": tenant.id, "name": tenant.name}, users)
 

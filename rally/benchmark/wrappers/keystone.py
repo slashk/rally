@@ -119,6 +119,11 @@ class KeystoneV2Wrapper(KeystoneWrapper):
         tenant = self.client.tenants.create(project_name)
         return KeystoneV2Wrapper._wrap_v2_tenant(tenant)
 
+    def get_project(self, project_name, domain_name='Default'):
+        self._check_domain(domain_name)
+        tenant = self.client.tenants.get(project_name)
+        return KeystoneV2Wrapper._wrap_v2_tenant(tenant)
+
     def delete_project(self, project_id):
         self.client.tenants.delete(project_id)
 
@@ -127,6 +132,9 @@ class KeystoneV2Wrapper(KeystoneWrapper):
         self._check_domain(domain_name)
         user = self.client.users.create(username, password, email, project_id)
         return KeystoneV2Wrapper._wrap_v2_user(user)
+
+    def get_user(self, user_name):
+        self.client.users.find(name=user_name)
 
     def delete_user(self, user_id):
         self.client.users.delete(user_id)
@@ -168,6 +176,12 @@ class KeystoneV3Wrapper(KeystoneWrapper):
     def create_project(self, project_name, domain_name='Default'):
         domain_id = self._get_domain_id(domain_name)
         project = self.client.projects.create(
+            name=project_name, domain=domain_id)
+        return KeystoneV3Wrapper._wrap_v3_project(project)
+
+    def get_project(self, project_name, domain_name='Default'):
+        domain_id = self._get_domain_id(domain_name)
+        project = self.client.projects.get(
             name=project_name, domain=domain_id)
         return KeystoneV3Wrapper._wrap_v3_project(project)
 

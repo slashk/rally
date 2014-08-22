@@ -50,6 +50,10 @@ class KeystoneWrapper(object):
         """Deletes project."""
 
     @abc.abstractmethod
+    def get_project(self, project_name):
+        """Finds project by name."""
+
+    @abc.abstractmethod
     def create_user(self, username, password, email=None, project_id=None,
                     domain_name='Default'):
         """Creates user that have Mamber role in given project.
@@ -69,6 +73,10 @@ class KeystoneWrapper(object):
     @abc.abstractmethod
     def list_users(self):
         """List all users."""
+
+    @abc.abstractmethod
+    def get_user(self, user_name):
+        """Finds users by name."""
 
     @abc.abstractmethod
     def list_projects(self):
@@ -211,6 +219,9 @@ class KeystoneV3Wrapper(KeystoneWrapper):
 
     def list_users(self):
         return map(KeystoneV3Wrapper._wrap_v3_user, self.client.users.list())
+
+    def get_user(self, user_name):
+        self.client.users.find(name=user_name)
 
     def list_projects(self):
         return map(KeystoneV3Wrapper._wrap_v3_project,

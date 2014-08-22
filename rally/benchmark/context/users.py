@@ -100,12 +100,6 @@ class UserGenerator(base.Context):
         #                        cfg.CONF.users_context.static_user_names)
         # self.config.setdefault("static_tenant_names",
         #                        cfg.CONF.users_context.static_tenant_names)
-        # if self.endpoint == []:
-        #     self.context["users"] = []
-        #     self.context["tenants"] = []
-        # else:
-        #     self.context["users"] = _static_user_list(self.endpoint)
-        #     self.context["tenants"] = _static_tenant_list(self.endpoint)
         # NOTE(boris-42): I think this is the best place for adding logic when
         #                 we are using pre created users or temporary. So we
         #                 should rename this class s/UserGenerator/UserContext/
@@ -162,7 +156,7 @@ class UserGenerator(base.Context):
         client = keystone.wrap(osclients.Clients(admin_endpoint).keystone())
         LOG.debug("Static user model is %s" % static_users)
         if static_users:
-            tenant = self._static_tenant_list(client, "demo")
+            tenant = _static_tenant_list(client, "demo")
         else:
             tenant = client.create_project(
                 cls.PATTERN_TENANT % {"task_id": task_id, "iter": i},
@@ -174,7 +168,7 @@ class UserGenerator(base.Context):
             # TODO: refactor this ugliness out
             test_user_names = ["test01", "test02", "test03"]
             password = "s3kr1t"
-            users = self._static_user_list(client, test_user_names, password,
+            users = _static_user_list(client, test_user_names, password,
                                       admin_endpoint, tenant, project_dom,
                                       user_dom)
         else:

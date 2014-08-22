@@ -176,20 +176,20 @@ class UserGenerator(base.Context):
                                       user_dom)
         else:
             for user_id in range(users_num):
-            username = cls.PATTERN_USER % {"tenant_id": tenant.id,
-                                           "uid": user_id}
-            user = client.create_user(username, "password",
-                                      "%s@email.me" % username, tenant.id,
-                                      user_dom)
-            user_endpoint = endpoint.Endpoint(client.auth_url, user.name,
-                                              "password", tenant.name,
-                                              consts.EndpointPermission.USER,
-                                              client.region_name,
-                                              project_domain_name=project_dom,
-                                              user_domain_name=user_dom)
-            users.append({"id": user.id,
-                          "endpoint": user_endpoint,
-                          "tenant_id": tenant.id})
+		    username = cls.PATTERN_USER % {"tenant_id": tenant.id,
+						   "uid": user_id}
+		    user = client.create_user(username, "password",
+					      "%s@email.me" % username, tenant.id,
+					      user_dom)
+		    user_endpoint = endpoint.Endpoint(client.auth_url, user.name,
+						      "password", tenant.name,
+						      consts.EndpointPermission.USER,
+						      client.region_name,
+						      project_domain_name=project_dom,
+						      user_domain_name=user_dom)
+		    users.append({"id": user.id,
+				  "endpoint": user_endpoint,
+				  "tenant_id": tenant.id})
 
         LOG.debug("tenant: %s, users %s" % (tenant.id, users))
 

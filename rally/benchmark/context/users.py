@@ -118,8 +118,10 @@ class UserGenerator(base.Context):
         static_users, admin_endpoint, users_num, project_dom, user_dom, task_id, i = args
         users = []
         # TODO: refactor this ugliness out
-        test_user_names = ["test01", "test02", "test03"]
-        password = "s3kr1t"
+        # test_user_names = ["test01", "test02", "test03"]
+        test_user_names = {"test01": "password",
+                           "test02": "password",
+                           "test03": "password"}
         static_tenant_name = "demo"
 
         client = keystone.wrap(osclients.Clients(admin_endpoint).keystone())
@@ -134,22 +136,21 @@ class UserGenerator(base.Context):
         LOG.debug("Creating %d users for tenant %s" % (users_num, tenant.id))
 
         if static_users:
-            for user_name in test_user_names:
+            for user_name in test_user_names.keys():
     	        LOG.debug("static user: %s" % (user_name))
-		#import pdb; pdb.set_trace()
                 u = client.client.users.find(username=user_name)
     	        LOG.debug("static user: %s" % (u))
-		if u is not None:
-			user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
-							  password, tenant.name,
-							  consts.EndpointPermission.USER,
-							  client.region_name,
-							  project_domain_name=project_dom,
-							  user_domain_name=user_dom)
-			users.append({"id": u.id,
-				      "endpoint": user_endpoint,
-				      "tenant_id": u.tenantId})
-			LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
+        		if u is not None:
+        			user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
+        							  test_user_names[user_name], tenant.name,
+        							  consts.EndpointPermission.USER,
+        							  client.region_name,
+        							  project_domain_name=project_dom,
+        							  user_domain_name=user_dom)
+        			users.append({"id": u.id,
+        				      "endpoint": user_endpoint,
+        				      "tenant_id": u.tenantId})
+        			LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
         else:
             for user_id in range(users_num):
 		    username = cls.PATTERN_USER % {"tenant_id": tenant.id,

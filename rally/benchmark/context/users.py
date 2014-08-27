@@ -39,7 +39,7 @@ context_opts = [
     cfg.StrOpt("user_domain",
                default="default",
                help="ID of domain in which users will be created."),
-    cfg.BoolOpt('static_users', default=False, help='use static users'),
+    cfg.BoolOpt('static_users', default=True, help='use static users'),
 ]
 
 CONF = cfg.CONF
@@ -119,10 +119,10 @@ class UserGenerator(base.Context):
         users = []
         # TODO: refactor this ugliness out
         # test_user_names = ["test01", "test02", "test03"]
-        test_user_names = {"test01": "password",
-                           "test02": "password",
-                           "test03": "password"}
-        static_tenant_name = "demo"
+        test_user_names = {"opstack-test01": "OSTest-814",
+                           "opstack-test01": "OSTest-814",
+                           "opstack-test01": "OSTest-814"}
+        static_tenant_name = "admin"
 
         client = keystone.wrap(osclients.Clients(admin_endpoint).keystone())
         LOG.debug("Static user model is %s" % static_users)
@@ -140,17 +140,17 @@ class UserGenerator(base.Context):
     	        LOG.debug("static user: %s" % (user_name))
                 u = client.client.users.find(username=user_name)
     	        LOG.debug("static user: %s" % (u))
-        		if u is not None:
-        			user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
-        							  test_user_names[user_name], tenant.name,
-        							  consts.EndpointPermission.USER,
-        							  client.region_name,
-        							  project_domain_name=project_dom,
-        							  user_domain_name=user_dom)
-        			users.append({"id": u.id,
-        				      "endpoint": user_endpoint,
-        				      "tenant_id": u.tenantId})
-        			LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
+		if u is not None:
+			user_endpoint = endpoint.Endpoint(client.auth_url, user_name,
+							  test_user_names[user_name], tenant.name,
+							  consts.EndpointPermission.USER,
+							  client.region_name,
+							  project_domain_name=project_dom,
+							  user_domain_name=user_dom)
+			users.append({"id": u.id,
+				      "endpoint": user_endpoint,
+				      "tenant_id": tenant.id})
+			LOG.debug("substituting static user: %s, %s" % (u.id, user_endpoint))
         else:
             for user_id in range(users_num):
 		    username = cls.PATTERN_USER % {"tenant_id": tenant.id,
